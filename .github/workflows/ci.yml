@@ -1,4 +1,3 @@
-
 name: Python CI
 
 on:
@@ -49,10 +48,12 @@ jobs:
 
   docker-build:
     runs-on: ubuntu-latest
+    needs: [build, lint]
     steps:
       - uses: actions/checkout@v3
-          docker build -t python-ci-demo .
 
       - name: Build Docker image
         run: |
+          docker build -t python-ci-demo .
+
 
