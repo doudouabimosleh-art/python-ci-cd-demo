@@ -1,4 +1,4 @@
-name: Python CI
+name: Python CI/CD Pipeline
 
 on:
   push:
@@ -20,38 +20,39 @@ jobs:
 
       - name: Install dependencies
         run: |
-          python -m pip install --upgrade pip
           pip install -r requirements.txt
 
       - name: Run tests
         run: |
-          python -m pytest
+          pytest
 
-  lint:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v3
-
-      - name: Set up Python
-        uses: actions/setup-python@v4
-        with:
-          python-version: "3.10"
-
-      - name: Install dependencies
-        run: |
-          python -m pip install --upgrade pip
-          pip install -r requirements.txt
-
-      - name: Run ruff linter
+      - name: Run linter
         run: |
           ruff check .
 
   docker-build:
+    needs: build
     runs-on: ubuntu-latest
-    needs: [build, lint]
     steps:
       - uses: actions/checkout@v3
 
       - name: Build Docker image
-        run: |
-          docker build -t python-ci-demo .
+        run: docker build -t python-ci-cd-demo .
+
+  deploy:
+    needs: docker-build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Log in to Docker Hub
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+
+      - name: Build Docker image
+        run: docker build -t ${{ secrets.DOCKERHUB_USERNAME }}/python-ci-cd-demo:latest .
+
+      - name: Push Docker image
+        run: docker push ${{ secrets.DOCKERHUB_USERNAME }}/python-ci-cd-demo:latest
